@@ -5,16 +5,16 @@
 #include <SPI.h>
 #include <SD.h>
 
-// --- PINY (dla UNO R4 WiFi + TFT Shield Waveshare 2.8") ---
+// --- PINS (for UNO R4 WiFi + TFT Shield Waveshare 2.8") ---
 #define TFT_CS   10
 #define TFT_BL   9
 #define TFT_RST  8
 #define TFT_DC   7
 #define SD_CS    5
 #define TOUCH_CS 4
-#define TOUCH_IRQ 3
+#define TOUCH_IRQ 3 // Change all if needed
 
-#define MAX_VARS 200   // maksymalna ilość zmiennych
+#define MAX_VARS 200   // maximum number of variables
 
 struct Variable {
   String name;
@@ -31,16 +31,16 @@ int touchY = 0;
 int touchZ = 0;
 bool touchDetected = false;
 
-// --- LCD przez Arduino_GFX ---
+// --- LCD via Arduino_GFX ---
 Arduino_DataBus *bus = new Arduino_HWSPI(
   TFT_DC /* DC */, TFT_CS);
 
 Arduino_GFX *gfx = new Arduino_ST7789(bus, TFT_RST, 240, 320);
 
-// --- Touchscreen przez XPT2046_Touchscreen ---
+// --- Touchscreen via XPT2046_Touchscreen ---
 XPT2046_Touchscreen ts(TOUCH_CS, TOUCH_IRQ);
 
-// Kalibracja ekranu dotykowego
+// Touchscreen calibration
 #define TS_MINX 100
 #define TS_MINY 120
 #define TS_MAXX 3800
@@ -48,10 +48,10 @@ XPT2046_Touchscreen ts(TOUCH_CS, TOUCH_IRQ);
 #define SCREEN_WIDTH  240
 #define SCREEN_HEIGHT 320
 
-// --- SD karta ---
+// --- SD card ---
 File myFile;
 
-// ======================= FUNKCJA COPYRIGHT =========================
+// ======================= COPYRIGHT FUNCTION =========================
 
 void printCopyright() {
   Serial.println("ZaurParser v0.7.1 - Simple script parser for Arduino with TFT");
@@ -69,7 +69,7 @@ void raise(String error) {
   Serial.println(error);
 }
 
-// Funkcja do parsowania jednej linii .zs
+// Function to parse a single .zs line
 void parseLine(String line) {
   line.trim();
 
@@ -140,13 +140,13 @@ void parseLine(String line) {
       } else {
         raise("Has undefined attribute.");
       }
-    } // Obsługa rysowania figur
+  } // Drawing commands support
     else if (line.startsWith("disp.render")) {
       int start = line.indexOf("\"");
       int end   = line.lastIndexOf("\"");
       if (start >= 0 && end > start) {
         String path = line.substring(start + 1, end);
-        renderBMP(path.c_str(), 0, 0); // domyślnie lewy górny róg
+  renderBMP(path.c_str(), 0, 0); // default: top-left corner
       } else {
         raise("Has undefined attribute.");
       }
@@ -357,7 +357,7 @@ void parseLine(String line) {
   }
 }
 
-// Funkcja do parsowania całego pliku
+// Function to parse the entire file
 void parseFile(const char *filename) {
   myFile = SD.open(filename);
   if (myFile) {
@@ -365,7 +365,7 @@ void parseFile(const char *filename) {
     int jumpToLine = -1;
     while (myFile.available()) {
       String line = myFile.readStringUntil('\n');
-      // Sprawdź polecenie jump przed parseLine
+  // Check jump command before parseLine
       String trimmed = line;
       trimmed.trim();
       if (trimmed.startsWith("jump")) {
@@ -391,7 +391,7 @@ void parseFile(const char *filename) {
             int target = numStr.toInt();
             cond.trim();
 
-            // Prosty parser warunku: np. $touch_detected==1
+            // Simple condition parser: e.g. $touch_detected==1
             int op = cond.indexOf("==");
             bool result = false;
             if (op > 0) {
@@ -402,7 +402,7 @@ void parseFile(const char *filename) {
               right = resolveVars(right);
               result = (left == right);
             }
-            // Możesz dodać obsługę !=, >, < itd.
+            // You can add support for !=, >, < etc.
 
             if (result && target > 0) {
               jumpToLine = target;
@@ -424,7 +424,7 @@ void parseFile(const char *filename) {
   }
 }
 
-// Ujednolicona obsługa zmiennych przez strukturę Variable
+// Unified variable handling via Variable struct
 void setVar(String name, String value) {
   for (int i = 0; i < varCount; i++) {
     if (vars[i].name == name) {
@@ -445,10 +445,10 @@ String getVar(String name) {
       return vars[i].value;
     }
   }
-  return ""; // nie znaleziono
+  return ""; // not found
 }
 
-// Funkcja renderująca BMP z karty SD na ekranie (lewy górny róg x, y)
+// Function to render BMP from SD card to screen (top-left corner x, y)
 void renderBMP(const char *filename, int x, int y) {
   File bmpFile = SD.open(filename);
   if (!bmpFile) {
@@ -457,7 +457,7 @@ void renderBMP(const char *filename, int x, int y) {
     return;
   }
 
-  // Nagłówek BMP
+  // BMP header
   if (bmpFile.read() != 'B' || bmpFile.read() != 'M') {
     Serial.println("This is not a BMP file!");
     bmpFile.close();
@@ -477,7 +477,7 @@ void renderBMP(const char *filename, int x, int y) {
   }
   bmpFile.seek(dataOffset);
 
-  // BMP jest zapisywany od dołu do góry
+  // BMP is stored bottom-to-top
   for (int row = bmpHeight - 1; row >= 0; row--) {
     for (int col = 0; col < bmpWidth; col++) {
       uint8_t b = bmpFile.read();
@@ -493,19 +493,19 @@ void renderBMP(const char *filename, int x, int y) {
   bmpFile.close();
 }
 
-// Funkcja zwracająca kolor RGB565 na podstawie nazwy lub kodu heksadecymalnego
+// Function returning RGB565 color from name or hex code
 
 uint16_t getColorFromName(String name) {
-  name.toLowerCase(); // ujednolicenie
+  name.toLowerCase(); // normalization
 
-  // 1. Sprawdź, czy zaczyna się od "0x" i ma 6 znaków (np. 0xF800)
+  // 1. Check if starts with "0x" and has 6 chars (e.g. 0xF800)
   if (name.startsWith("0x") && name.length() == 6) {
-    // Konwersja: String → uint16_t
+  // Conversion: String → uint16_t
     uint16_t val = (uint16_t) strtol(name.c_str(), NULL, 16);
     return val;
   }
 
-  // 2. Nazwy kolorów (RGB565)
+  // 2. Color names (RGB565)
   if (name == "black")    return 0x0000;
   if (name == "white")    return 0xFFFF;
   if (name == "red")      return 0xF800;
@@ -558,7 +558,7 @@ uint16_t getColorFromName(String name) {
   if (name == "steel")    return 0x4416;
   if (name == "sea")      return 0x2C4A;
 
-  // 3. Jak nic nie pasuje → domyślnie czarny
+  // 3. If nothing matches - default to black
   return 0x0000;
   raise("Unknown color name or format. Returning black.");
 }
@@ -582,7 +582,7 @@ String resolveVars(String text) {
   return out;
 }
 
-// Pomocnicza funkcja do ustawiania zmiennej w tablicy (lub nadpisania)
+// Helper function to set (or overwrite) a variable in the array
 void setVarAuto(String name, String value) {
   for (int i = 0; i < varCount; i++) {
     if (vars[i].name == name) {
@@ -615,7 +615,7 @@ void setup() {
 
 
 void loop() {
-  // Odczytaj dotyk
+  // Read touch
   if (ts.touched()) {
     TS_Point p = ts.getPoint();
     touchX = map(p.x, TS_MINX, TS_MAXX, 0, SCREEN_WIDTH);
@@ -627,7 +627,7 @@ void loop() {
     touchZ = 0;
   }
 
-  // Zapisz do tablicy zmiennych
+  // Save to variable array
   setVarAuto("touch_x", String(touchX));
   setVarAuto("touch_y", String(touchY));
   setVarAuto("touch_z", String(touchZ));
