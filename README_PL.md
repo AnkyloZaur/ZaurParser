@@ -1,6 +1,6 @@
 # ZaurParser
 
-ZaurParser to prosty parser skryptów dla Arduino UNO R4 WiFi z obsługą ekranu dotykowego TFT (Waveshare 2.8") oraz karty SD. Pozwala na wykonywanie poleceń graficznych, obsługę zmiennych, warunkowe skoki i wyświetlanie obrazów BMP.
+ZaurParser to prosty parser skryptów dla Arduino UNO R4 WiFi z obsługą ekranu dotykowego TFT Waveshare 2.8" (zalecany, ale można użyć dowolnego innego z obsługą ST7789) oraz karty SD. Pozwala na wykonywanie poleceń graficznych, obsługę zmiennych, warunkowe skoki i wyświetlanie obrazów BMP.
 
 ## Funkcje
 - Wyświetlanie tekstu i grafiki na ekranie TFT
@@ -19,6 +19,7 @@ ZaurParser to prosty parser skryptów dla Arduino UNO R4 WiFi z obsługą ekranu
 1. Wgraj kod na Arduino.
 2. Umieść plik `main.zs` na karcie SD.
 3. Po uruchomieniu, parser automatycznie wykona polecenia z pliku.
+4. Gotowe! Twórz własne skrypty i OS!
 
 ## Przykład pliku main.zs
 
@@ -42,3 +43,10 @@ echo "Koniec!"
 ```
 
 Więcej szczegółów w pliku CODE.md.
+
+
+## Kontrybucja
+Zapraszam do kontrybucji poprzez zgłaszanie issue lub pull requesty na GitHubie.
+
+## Licencja
+Projekt jest licencjonowany na licencji MIT.
