@@ -4,6 +4,9 @@
 #include <XPT2046_Touchscreen.h>
 #include <SPI.h>
 #include <SD.h>
+#if defined(ARDUINO_UNOWIFIR4)
+#include <WiFiS3.h>
+#endif
 
 // --- PINS (for UNO R4 WiFi + TFT Shield Waveshare 2.8") ---
 #define TFT_CS   10
@@ -54,7 +57,7 @@ File myFile;
 // ======================= COPYRIGHT FUNCTION =========================
 
 void printCopyright() {
-  Serial.println("ZaurParser v0.7.1 - Simple script parser for Arduino with TFT");
+  Serial.println("ZaurParser v0.7.2 - Simple script parser for Arduino with TFT");
   Serial.println("Copyright (c) 2025 AnkyloZaur");
   Serial.println("Licensed under the MIT License");
   Serial.println(" ");
@@ -71,6 +74,45 @@ void raise(String error) {
 
 // Function to parse a single .zs line
 void parseLine(String line) {
+  #if defined(ARDUINO_UNOWIFIR4)
+  if (line.startsWith("wifi.connect")) {
+    int start = line.indexOf("\"");
+    int end   = line.lastIndexOf("\"");
+    if (start >= 0 && end > start) {
+      String params = line.substring(start + 1, end);
+      int comma = params.indexOf(",");
+      if (comma > 0) {
+        String ssid = params.substring(0, comma);
+        String pass = params.substring(comma + 1);
+        ssid.trim();
+        pass.trim();
+        Serial.print("Connecting to WiFi: ");
+        Serial.println(ssid);
+        int status = WiFi.begin(ssid.c_str(), pass.c_str());
+        unsigned long startAttempt = millis();
+        while (WiFi.status() != WL_CONNECTED && millis() - startAttempt < 10000) {
+          delay(200);
+        }
+        if (WiFi.status() == WL_CONNECTED) {
+          Serial.print("WiFi connected. IP: ");
+          Serial.println(WiFi.localIP());
+        } else {
+          raise("WiFi connection failed.");
+        }
+      } else {
+        raise("wifi.connect: missing comma between SSID and password");
+      }
+    } else {
+      raise("wifi.connect: missing or invalid attributes");
+    }
+    return;
+  }
+  #else
+  if (line.startsWith("wifi.")) {
+    Serial.println("This is not Arduino UNO R4 WiFi. WiFi not supported.");
+    return;
+  }
+  #endif
   line.trim();
 
   if (line.startsWith("echo")) {
@@ -145,8 +187,22 @@ void parseLine(String line) {
       int start = line.indexOf("\"");
       int end   = line.lastIndexOf("\"");
       if (start >= 0 && end > start) {
-        String path = line.substring(start + 1, end);
-  renderBMP(path.c_str(), 0, 0); // default: top-left corner
+        String params = line.substring(start + 1, end);
+        int comma1 = params.indexOf(",");
+        int comma2 = (comma1 >= 0) ? params.indexOf(",", comma1 + 1) : -1;
+        String path = params;
+        int x = 0, y = 0;
+        if (comma1 >= 0 && comma2 >= 0) {
+          path = params.substring(0, comma1);
+          String xStr = params.substring(comma1 + 1, comma2);
+          String yStr = params.substring(comma2 + 1);
+          xStr.trim();
+          yStr.trim();
+          x = xStr.toInt();
+          y = yStr.toInt();
+        }
+        path.trim();
+        renderBMP(path.c_str(), x, y);
       } else {
         raise("Has undefined attribute.");
       }
